@@ -8,15 +8,14 @@ import { UpdatedDateService } from './services/updated-date/updated-date.service
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { Public } from 'nest-keycloak-connect';
-import { CACHE_MANAGER, CacheInterceptor } from '@nestjs/cache-manager';
+import { CACHE_MANAGER, CacheInterceptor, CacheKey } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 
 
 @Controller()
 export class AppController {
     constructor(private readonly appService: AppService, private databaseService: DatabaseService, private metricService: MetricCsvService,
-        private updatesDate: UpdatedDateService, private configService: ConfigService, private httpService: HttpService,
-        @Inject(CACHE_MANAGER) private cacheManager: Cache) {
+        private updatesDate: UpdatedDateService, private configService: ConfigService, private httpService: HttpService) {
     }
 
     @Get()
@@ -46,7 +45,6 @@ export class AppController {
     }
 
     @Post('/query')
-    @UseInterceptors(CacheInterceptor)
     async executeQuery(@Body() body: any, @Res() response: Response) {
         try {
             let result = await this.databaseService.executeQuery(body?.query);

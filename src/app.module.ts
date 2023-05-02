@@ -15,11 +15,8 @@ import {
 } from 'nest-keycloak-connect';
 import { APP_GUARD } from '@nestjs/core';
 import { HttpModule, HttpService } from '@nestjs/axios';
-import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-store';
-import { CacheStore } from '@nestjs/common/cache/interfaces/cache-manager.interface'
-@Module({
 
+@Module({
   controllers: [AppController],
   providers: [AppService,
     {
@@ -29,24 +26,6 @@ import { CacheStore } from '@nestjs/common/cache/interfaces/cache-manager.interf
     MetricCsvService, UpdatedDateService],
   imports: [
     DatabaseModule, HttpModule,
-    CacheModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: async (config: ConfigService) => {
-        const store = await redisStore({
-          socket: {
-            host: config.get('REDIS_HOST'),
-            port: +config.get('REDIS_PORT'),
-          },
-        });
-
-        return {
-          store: store as unknown as CacheStore,
-          ttl: 1000 * 60 * 60 * 24, // 1 day in ms
-          max: 100 * 1000 * 1000, // 100 MB
-        };
-      },
-      inject: [ConfigService],
-    }),
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -76,6 +55,4 @@ import { CacheStore } from '@nestjs/common/cache/interfaces/cache-manager.interf
   ],
 
 })
-export class AppModule {
-
-}
+export class AppModule {}
