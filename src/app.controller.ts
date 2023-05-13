@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Post, Query, Res, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AppService } from './app.service';
 import { DatabaseService } from './database/database.service';
 import { Response } from 'express';
@@ -8,6 +8,8 @@ import { UpdatedDateService } from './services/updated-date/updated-date.service
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { Public } from 'nest-keycloak-connect';
+import { CACHE_MANAGER, CacheInterceptor, CacheKey } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 
 @Controller()
