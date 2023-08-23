@@ -19,15 +19,61 @@ export class DatabaseService {
         return result;
     }
 
-    executeQuery(queryText: string, values: any[] = []): Promise<any[]> {
+    async executeQuery(queryText: string, values: any[] = [], allowedReports = []): Promise<any[]> {
         // pre processing query here
-        const preprocessedQuery = this.preprocessQuery(queryText);
-        this.logger.debug(`Executing query: ${preprocessedQuery} (${values})`);
-        return this.pool.query(preprocessedQuery, values).then((result: QueryResult) => {
+        let datasetTableNames = this.getDatasetTableNames(queryText);
+        let executeQuery = true;
+
+        if (datasetTableNames.length > 0) {
+            let result = await this.getDatasetGrammar(allowedReports);
+            for (let i = 0; i < datasetTableNames.length; i++) {
+                let datasetTableName = datasetTableNames[i].toLowerCase();
+                let datasetGrammar = result.find(rec => {
+                    rec.tableName = typeof rec.tableName === 'string' ? rec.tableName.toLowerCase() : rec.tableName;
+                    rec.tableNameExpanded = typeof rec.tableNameExpanded === 'string' ? rec.tableNameExpanded.toLowerCase() : rec.tableNameExpanded;
+
+                    return rec.tableName === datasetTableName || rec.tableNameExpanded === datasetTableName;
+                });
+
+                if (!datasetGrammar || (datasetGrammar && datasetGrammar.program && allowedReports.indexOf(datasetGrammar.program) === -1)) {
+                    executeQuery = false;
+                    break;
+                }
+            }
+        }
+
+        if (executeQuery) {
+            const preprocessedQuery = this.preprocessQuery(queryText);
+            this.logger.debug(`Executing query: ${preprocessedQuery} (${values})`);
+            return this.pool.query(preprocessedQuery, values).then((result: QueryResult) => {
+                return result.rows;
+            });
+        }
+
+        return [];
+    }
+
+    getDatasetGrammar(reports: string[]) {
+        let query = `SELECT program, "tableName", "tableNameExpanded" FROM spec."DatasetGrammar" WHERE program IN('${reports.join("','")}')`;
+        return this.pool.query(query).then((result: QueryResult) => {
             return result.rows;
         });
     }
 
+    getDatasetTableNames(query: string) {
+        const regexp = /(datasets\.)[a-zA-Z0-9_]+/g;
+        const datasetTableNames = [...query.matchAll(regexp)];
+        
+        if (datasetTableNames.length > 0) {
+            return datasetTableNames.map(tableName => {
+                let extTableName = tableName[0].split(".");
+                extTableName.splice(0, 1);
+                return extTableName.join("");
+            });
+        }
+
+        return [];
+    }
 
     async executeWhiteListedQuery(queryText: string, values: any[]): Promise<any[]> {
         const queries = whitelist?.queries;
