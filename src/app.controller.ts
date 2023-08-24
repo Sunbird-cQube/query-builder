@@ -1,19 +1,20 @@
-import { Body, Controller, Get, Post, Query, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Res, Req, UseGuards } from '@nestjs/common';
 import { AppService } from './app.service';
 import { DatabaseService } from './database/database.service';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { MetricCsvService } from './services/metric-csv/metric-csv.service';
 import * as jwt from 'jsonwebtoken';
 import { UpdatedDateService } from './services/updated-date/updated-date.service';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { Public } from 'nest-keycloak-connect';
+import { UserService } from './services/user/user.service';
 
 
 @Controller()
 export class AppController {
     constructor(private readonly appService: AppService, private databaseService: DatabaseService, private metricService: MetricCsvService,
-        private updatesDate: UpdatedDateService, private configService: ConfigService, private httpService: HttpService) {
+        private updatesDate: UpdatedDateService, private configService: ConfigService, private httpService: HttpService, private userService: UserService) {
     }
 
     @Get()
@@ -43,9 +44,11 @@ export class AppController {
     }
 
     @Post('/query')
-    async executeQuery(@Body() body: any, @Res() response: Response) {
+    async executeQuery(@Body() body: any, @Req() request: Request, @Res() response: Response) {
         try {
-            let result = await this.databaseService.executeQuery(body?.query);
+            let token = request.headers.authorization;
+            let { allowedReports } = await this.userService.getAllowedReportsOfUser(token);
+            let result = await this.databaseService.executeQuery(body?.query, null, allowedReports);
             response.status(200).send(result)
         }
         catch (e) {
@@ -56,9 +59,11 @@ export class AppController {
     }
 
     @Get('/metric')
-    async csvtoJson(@Res() response: Response) {
+    async csvtoJson(@Req() request: Request, @Res() response: Response) {
         try {
-            let result = await this.metricService.convertCsvToJson();
+            let token = request.headers.authorization;
+            let { allowedReports } = await this.userService.getAllowedReportsOfUser(token);
+            let result = await this.metricService.convertCsvToJson(allowedReports);
             if (result.code == 400) {
                 response.status(400).send({ message: result.error });
             } else {
@@ -103,7 +108,7 @@ export class AppController {
         const username = inputData.username;
         const password = inputData.password;
         try {
-            if (username && password) {
+            if (username && password) { 
                 // let payload = {
                 //     client_id: client_id, client_secret: client_secret, grant_type: 'password', username: username, password: password
                 // }
@@ -116,6 +121,12 @@ export class AppController {
                 const URL = `${keyClockurl}/realms/${realm}/protocol/openid-connect/token`;
                 const result: any = await this.httpService.post(URL, payload, config).toPromise();
                 if (result) {
+                    let { allowedReports, userRoles } = await this.userService.getAllowedReportsOfUser(`Bearer ${result.data.access_token}`);
+                    result.data = {
+                        ...result.data,
+                        program_access: allowedReports,
+                        roles: userRoles
+                    }
                     response.status(200).send(result.data)
                 }
                 else {
@@ -148,7 +159,7 @@ export class AppController {
             const config: any = { headers };
             const result: any = await this.httpService.post(URL, payload, config).toPromise();
             if (result) {
-                response.status(200).send(result.data)
+                response.status(200).send(result.data);
             }
             else {
                 response.status(401).send(result.data)

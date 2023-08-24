@@ -27,7 +27,6 @@ export class UpdatedDateService {
             secretAccessKey: this.configService.get<string>('AWS_SECRET_KEY'),
             region: this.configService.get<string>('AWS_BUCKET_REGION'),
         });
-
     }
 
     async getLastModified(inputData) {

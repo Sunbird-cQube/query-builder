@@ -17,6 +17,7 @@ import {
 } from 'nest-keycloak-connect';
 import { APP_GUARD } from '@nestjs/core';
 import { HttpModule, HttpService } from '@nestjs/axios';
+import { UserService } from './services/user/user.service';
 
 @Module({
 
@@ -26,7 +27,7 @@ import { HttpModule, HttpService } from '@nestjs/axios';
       provide: APP_GUARD,
       useClass: AuthGuard,
     },
-    MetricCsvService, UpdatedDateService],
+    MetricCsvService, UpdatedDateService, UserService],
   imports: [
     DatabaseModule,HttpModule,
     ConfigModule.forRoot({ isGlobal: true }),
