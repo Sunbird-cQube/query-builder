@@ -1,13 +1,13 @@
-import { Body, Controller, Get, Post, Query, Res, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Res, Req, UseGuards, Param } from '@nestjs/common';
 import { AppService } from './app.service';
 import { DatabaseService } from './database/database.service';
-import { Request, Response } from 'express';
+import { Request, Response, response } from 'express';
 import { MetricCsvService } from './services/metric-csv/metric-csv.service';
 import * as jwt from 'jsonwebtoken';
 import { UpdatedDateService } from './services/updated-date/updated-date.service';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { Public } from 'nest-keycloak-connect';
+import { AuthenticatedUser, Public, Roles } from 'nest-keycloak-connect';
 import { UserService } from './services/user/user.service';
 
 
@@ -108,7 +108,7 @@ export class AppController {
         const username = inputData.username;
         const password = inputData.password;
         try {
-            if (username && password) { 
+            if (username && password) {
                 // let payload = {
                 //     client_id: client_id, client_secret: client_secret, grant_type: 'password', username: username, password: password
                 // }
@@ -121,11 +121,12 @@ export class AppController {
                 const URL = `${keyClockurl}/realms/${realm}/protocol/openid-connect/token`;
                 const result: any = await this.httpService.post(URL, payload, config).toPromise();
                 if (result) {
-                    let { allowedReports, userRoles } = await this.userService.getAllowedReportsOfUser(`Bearer ${result.data.access_token}`);
+                    let { allowedReports, userRoles, userId } = await this.userService.getAllowedReportsOfUser(`Bearer ${result.data.access_token}`);
                     result.data = {
                         ...result.data,
                         program_access: allowedReports,
-                        roles: userRoles
+                        roles: userRoles,
+                        userId
                     }
                     response.status(200).send(result.data)
                 }
@@ -170,5 +171,74 @@ export class AppController {
             response.status(401).send({ error: error.message })
         }
 
+    }
+
+    @Get('getUserAttributes/:userId')
+    async getUserAttributes(@Res() response: any, @Param('userId') userId: any): Promise<any> {
+        try {
+            console.log(userId)
+            // const userId = inputData.userId
+            const token: any = await this.userService.getAdminUserToken();
+            const headers = {
+                'Authorization': `Bearer ${token?.access_token}`,
+            };
+            const config: any = { headers };
+            const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/users/${userId}`;
+            const results = await this.httpService.get(URL, config).toPromise()
+            console.log(results.data.attributes)
+            response.send({
+                details: results.data.attributes
+            })
+        }
+        catch (error) {
+            console.error('execute-userAttr-impl: ', error.message);
+            response.status(500).send("Error: " + error.message);
+            throw new Error(error);
+        }
+    }
+
+    @Post()
+    async(@Body() inputData: any, @Res() response: any) {
+        try {
+            const details = inputData.details;
+        }
+        catch (error) {
+            console.error('execute-userAttr-impl: ', error.message);
+            response.status(500).send("Error: " + error.message);
+            throw new Error(error);
+        }
+    }
+
+    @Get('addUserInfo')
+    @Public()
+    async addUserInfo(@Res() response: any, @Req() request: any) {
+        try {
+            const clientScopesRes = await this.userService.getClientScopes();
+            const clientScopes = clientScopesRes?.data
+            const rolesClientScope = clientScopes.find((obj: any) => {
+                return obj.name === 'roles'
+            });
+            const rolesProtocolMappers = rolesClientScope?.protocolMappers
+            let realmRolesProtocolMappers = rolesProtocolMappers.find((obj: any) => {
+                return obj.name === 'realm roles'
+            });
+            const payload = {
+
+            }
+            realmRolesProtocolMappers = {
+                ...realmRolesProtocolMappers,
+                config: {
+                    ...realmRolesProtocolMappers.config,
+                    "userinfo.token.claim": "true"
+                }
+            }
+            const results = await this.userService.updateRealmRolesInfo(rolesClientScope.id, realmRolesProtocolMappers.id, realmRolesProtocolMappers)
+            response.send(results)
+        }
+        catch (error) {
+            console.error('execute-query-impl: ', error.message);
+            response.status(500).send("Error: " + error.message);
+            throw new Error(error);
+        }
     }
 }

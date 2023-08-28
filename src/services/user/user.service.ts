@@ -65,6 +65,7 @@ export class UserService {
     async getAllowedReportsOfUser(token: string) {
         let userInfoRes: any = await this.getUserInfoByToken(token);
         let userRoles = userInfoRes?.data?.realm_access?.roles;
+        let userId = userInfoRes.data.sub
         let allowedReports = [];
         if (userRoles.length > 0) {
             for (let i = 0; i < userRoles.length; i++) {
@@ -80,7 +81,51 @@ export class UserService {
         return {
             userInfo: userInfoRes.data,
             allowedReports,
-            userRoles
+            userRoles,
+            userId: userId
         };
+    }
+
+    async getUserAttributes(userId: string) {
+        const token: any = await this.getAdminUserToken();
+        const headers = {
+            'Authorization': `Bearer ${token?.access_token}`,
+        };
+        const config: any = { headers };
+        const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/users/${userId}`;
+        const results = this.httpService.get(URL, config).toPromise();
+        console.log(results)
+    }
+
+    async getClientScopes() {
+        try {
+            const token: any = await this.getAdminUserToken();
+            const headers = {
+                'Authorization': `Bearer ${token?.access_token}`,
+            };
+            const config: any = { headers };
+            const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/client-scopes`
+            return this.httpService.get(URL, config).toPromise();
+        }
+        catch (e) {
+            return e;
+        }
+    }
+
+    async updateRealmRolesInfo(clientScopesId: any, realmRolesMapperId: any, payload: any) {
+        try {
+            const token: any = await this.getAdminUserToken();
+            const headers = {
+                'Authorization': `Bearer ${token?.access_token}`,
+            };
+            const config: any = { headers };
+            payload = {"id":"36a8089f-77e1-4e11-bab7-8415bf5427d7","name":"realm roles","protocol":"openid-connect","protocolMapper":"oidc-usermodel-realm-role-mapper","consentRequired":false,"config":{"multivalued":"true","userinfo.token.claim":"true","user.attribute":"foo","access.token.claim":"true","claim.name":"realm_access.roles","jsonType.label":"String","id.token.claim":""}}
+            // const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/client-scopes/${clientScopesId}/protocol-mappers/models/${realmRolesMapperId}`
+            const URL = 'http://localhost:8080/auth/admin/realms/cQube/client-scopes/b3669477-e84e-4993-8b97-de4485c3c2e7/protocol-mappers/models/36a8089f-77e1-4e11-bab7-8415bf5427d7'
+            const result  = await this.httpService.put(URL, payload, config).toPromise();
+        }
+        catch (e) {
+            return e;
+        }
     }
 }
