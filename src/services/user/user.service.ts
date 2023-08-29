@@ -119,10 +119,8 @@ export class UserService {
                 'Authorization': `Bearer ${token?.access_token}`,
             };
             const config: any = { headers };
-            payload = {"id":"36a8089f-77e1-4e11-bab7-8415bf5427d7","name":"realm roles","protocol":"openid-connect","protocolMapper":"oidc-usermodel-realm-role-mapper","consentRequired":false,"config":{"multivalued":"true","userinfo.token.claim":"true","user.attribute":"foo","access.token.claim":"true","claim.name":"realm_access.roles","jsonType.label":"String","id.token.claim":""}}
-            // const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/client-scopes/${clientScopesId}/protocol-mappers/models/${realmRolesMapperId}`
-            const URL = 'http://localhost:8080/auth/admin/realms/cQube/client-scopes/b3669477-e84e-4993-8b97-de4485c3c2e7/protocol-mappers/models/36a8089f-77e1-4e11-bab7-8415bf5427d7'
-            const result  = await this.httpService.put(URL, payload, config).toPromise();
+            const URL = `${this.keyClockurl}/admin/realms/${this.realm}/client-scopes/${clientScopesId}/protocol-mappers/models/${realmRolesMapperId}`;
+            return this.httpService.put(URL, payload, config).toPromise();
         }
         catch (e) {
             return e;
