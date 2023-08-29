@@ -72,7 +72,7 @@ export class UserService {
                 let roleInfoRes: any = await this.getRoleInfo(userRoles[i]);
                 let roleInfo = roleInfoRes?.data;
                 if (roleInfo && roleInfo.attributes && roleInfo.attributes.reports && roleInfo.attributes.reports.length > 0) {
-                    let reports = roleInfo.attributes.reports[0].split(",");
+                    let reports = roleInfo.attributes.reports;
                     allowedReports = [...allowedReports, ...reports];
                 }
             }
