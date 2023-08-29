@@ -22,7 +22,7 @@ export class MetricCsvService {
                     jsonArray1.forEach((row: any) => {
                         if (row['status'] == 'true') {
                             jsonArray.forEach((data1: any) => {
-                                if (row['program_id'] == data1['Program Id'] && allowedReports.indexOf(data1['Namespace']) > -1) {
+                                if (row['program_id'] == data1['Program Id'] && allowedReports.indexOf(data1['Program Id']) > -1) {
                                     let  temp = {
                                         programName: data1['Program Name'],
                                         tooltip: data1['Program Information'],
