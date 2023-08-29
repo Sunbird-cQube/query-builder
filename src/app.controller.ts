@@ -59,7 +59,7 @@ export class AppController {
     }
 
     @Get('/metric')
-    async csvtoJson(@Req() request: Request, @Res() response: Response) {
+    async csvtoJson(@Req() request: Request, @Res() response: Response, @AuthenticatedUser() user: any) {
         try {
             let token = request.headers.authorization;
             let { allowedReports } = await this.userService.getAllowedReportsOfUser(token);
@@ -129,6 +129,58 @@ export class AppController {
                         userId
                     }
                     response.status(200).send(result.data)
+                }
+                else {
+                    response.status(401).send(result.data)
+                }
+                // this.httpService.post(URL, payload, { headers: headersRequest }).subscribe();
+            }
+            else {
+                response.status(401)
+            }
+        } catch (error) {
+            console.log('keyClock.impl.service', error.message);
+            response.status(401).send({ error: error.message })
+        }
+    }
+
+    @Post('admin/login')
+    @Public()
+    async adminLogin(@Body() inputData: any, @Res() response: Response): Promise<any> {
+        const keyClockurl = this.configService.get<String>('KEY_CLOCK_URL');
+        const realm = this.configService.get<String>('REALM');
+        const client_id = this.configService.get<string>('KEY_CLOAK_CLIENT_ID');
+        const client_secret = this.configService.get<string>('KEY_CLOAK_SECRET');
+        const username = inputData.username;
+        const password = inputData.password;
+        try {
+            if (username && password) {
+                // let payload = {
+                //     client_id: client_id, client_secret: client_secret, grant_type: 'password', username: username, password: password
+                // }
+                let payload = `client_id=${client_id}&client_secret=${client_secret}&grant_type=password&username=${username}&password=${password}`
+
+                const headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                };
+                const config: any = { headers };
+                const URL = `${keyClockurl}/realms/${realm}/protocol/openid-connect/token`;
+                const result: any = await this.httpService.post(URL, payload, config).toPromise();
+                if (result) {
+                    let { allowedReports, userRoles } = await this.userService.getAllowedReportsOfUser(`Bearer ${result.data.access_token}`);
+                    result.data = {
+                        ...result.data,
+                        program_access: allowedReports,
+                        roles: userRoles
+                    }
+                    
+                    if (userRoles.indexOf("admin") > -1) {
+                        response.status(200).send(result.data)
+                    } else {
+                        response.status(401).send({
+                            message: "Your account doesn't have Administrator priviliges"
+                        })
+                    }
                 }
                 else {
                     response.status(401).send(result.data)
@@ -232,8 +284,9 @@ export class AppController {
                     "userinfo.token.claim": "true"
                 }
             }
+
             const results = await this.userService.updateRealmRolesInfo(rolesClientScope.id, realmRolesProtocolMappers.id, realmRolesProtocolMappers)
-            response.send(results)
+            response.send(results.data)
         }
         catch (error) {
             console.error('execute-query-impl: ', error.message);
