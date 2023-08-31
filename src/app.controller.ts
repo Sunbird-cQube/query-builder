@@ -309,4 +309,33 @@ export class AppController {
             throw new Error(error);
         }
     }
+
+    @Post('logout')
+    async logout(@Body() inputData: any, @Res() response: Response): Promise<any> {
+        const keyClockurl = this.configService.get<String>('KEY_CLOCK_URL');
+        const realm = this.configService.get<String>('REALM');
+        const client_id = this.configService.get<string>('KEY_CLOAK_CLIENT_ID');
+        const refreshToken = inputData.refresh_token;
+        try {
+            let payload = `client_id=${client_id}&refresh_token=${refreshToken}`;
+            console.log(payload)
+            let headers = {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            };
+            const URL = `${keyClockurl}/realms/${realm}/protocol/openid-connect/logout`;
+            const config: any = { headers };
+            const result: any = await this.httpService.post(URL, payload, config).toPromise();
+            if (result) {
+                response.status(200).send(result.data);
+            }
+            else {
+                response.status(401).send(result.data)
+            }
+        }
+        catch (error) {
+            console.log('keyClock.impl.service', error.message);
+            response.status(401).send({ error: error.message })
+        }
+
+    }
 }
