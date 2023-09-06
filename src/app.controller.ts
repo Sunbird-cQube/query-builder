@@ -237,7 +237,7 @@ export class AppController {
             const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/users/${userId}`;
             const results = await this.httpService.get(URL, config).toPromise()
             let details = results?.data?.attributes
-            if(Object.keys(details).length > 0) {
+            if(details && Object.keys(details).length > 0) {
                 // preferences = JSON.parse(results.data.attributes)
                 Object.keys(details).map(key => {
                     details[key] = details[key]?.[0] ? JSON.parse(details[key][0]) : ''
