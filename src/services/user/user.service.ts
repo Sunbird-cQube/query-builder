@@ -22,7 +22,7 @@ export class UserService {
 
     getUserInfoByToken(token: string) {
         const URL = `${this.keyClockurl}/realms/${this.realm}/protocol/openid-connect/userinfo`;
-        
+
         const headers = {
             'Authorization': token,
         };
@@ -42,7 +42,7 @@ export class UserService {
             try {
                 const result: any = await this.httpService.post(URL, payload, config).toPromise();
                 resolve(result.data)
-            } catch(e) {
+            } catch (e) {
                 reject("Invalid admin credentials");
             }
         });
@@ -57,7 +57,7 @@ export class UserService {
             };
             const config: any = { headers };
             return this.httpService.get(URL, config).toPromise();
-        } catch(e) {
+        } catch (e) {
             return e;
         }
     }
@@ -72,8 +72,17 @@ export class UserService {
                 let roleInfoRes: any = await this.getRoleInfo(userRoles[i]);
                 let roleInfo = roleInfoRes?.data;
                 if (roleInfo && roleInfo.attributes && roleInfo.attributes.reports && roleInfo.attributes.reports.length > 0) {
-                    let reports = roleInfo.attributes.reports[0].split(",");
-                    allowedReports = [...allowedReports, ...reports];
+                    let temp = []
+                    let reports = roleInfo.attributes.reports.filter((string) => {
+                        if(string.includes(',')) {
+                            temp = temp.concat(string.split(','))
+                            return false
+                        }
+                        else {
+                            return true
+                        }
+                    })
+                    allowedReports = [...allowedReports, ...reports, ...temp];
                 }
             }
         }
@@ -87,14 +96,35 @@ export class UserService {
     }
 
     async getUserAttributes(userId: string) {
-        const token: any = await this.getAdminUserToken();
-        const headers = {
-            'Authorization': `Bearer ${token?.access_token}`,
-        };
-        const config: any = { headers };
-        const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/users/${userId}`;
-        const results = this.httpService.get(URL, config).toPromise();
-        console.log(results)
+        try {
+            const token: any = await this.getAdminUserToken();
+            const headers = {
+                'Authorization': `Bearer ${token?.access_token}`,
+            };
+            const config: any = { headers };
+            const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/users/${userId}`;
+            const results = this.httpService.get(URL, config).toPromise();
+            return results;
+        }
+        catch (error) {
+            return error;
+        }
+    }
+
+    async setUserAttributes(userId: any, details: any) {
+        try {
+            const token: any = await this.getAdminUserToken();
+            const headers = {
+                'Authorization': `Bearer ${token?.access_token}`,
+            };
+            const config: any = { headers };
+            const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/users/${userId}`;
+            const results = this.httpService.put(URL, details, config).toPromise();
+            return results;
+        }
+        catch (error) {
+            return error
+        }
     }
 
     async getClientScopes() {
