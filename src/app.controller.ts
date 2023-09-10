@@ -323,4 +323,32 @@ export class AppController {
         }
 
     }
+
+    @Post('/captureTelemetry')
+    // @Public()
+    async captureTelemetry(@Body() inputData: any, @Res() response:any){
+        try {
+            let getJWT = await this.httpService.get(`${process.env.INGESTION_URL}/generatejwt`).toPromise()
+            if(getJWT.data){
+                let body = 
+                    {
+                        "event_name": "telemetry",
+                        "event": inputData?.data,
+                        "isTelemetryWritingEnd": inputData?.isTelemetryWritingEnd
+                    }
+                let headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization' : `Bearer ${getJWT.data}`
+                }
+                    
+                let ingestEvent = await this.httpService.post(`${process.env.INGESTION_URL}/event`,body,{headers}).toPromise();                    
+                if(ingestEvent){
+                    response.status(200).send({message:"stored telemetry into file"})
+                }
+            }
+        } catch (error) {
+            console.log('captureTelemetry.impl.service', error.message);
+            response.status(401).send({ error: error.message })
+        }
+    }
 }
