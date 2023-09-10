@@ -226,10 +226,9 @@ export class AppController {
     }
 
     @Get('getUserAttributes/:userId')
+    @Public()
     async getUserAttributes(@Res() response: any, @Param('userId') userId: any): Promise<any> {
         try {
-            console.log(userId)
-            // const userId = inputData.userId
             const token: any = await this.userService.getAdminUserToken();
             const headers = {
                 'Authorization': `Bearer ${token?.access_token}`,
@@ -237,9 +236,15 @@ export class AppController {
             const config: any = { headers };
             const URL = `${process.env.KEY_CLOCK_URL}/admin/realms/${process.env.REALM}/users/${userId}`;
             const results = await this.httpService.get(URL, config).toPromise()
-
+            let details = results?.data?.attributes
+            if(details && Object.keys(details).length > 0) {
+                // preferences = JSON.parse(results.data.attributes)
+                Object.keys(details).map(key => {
+                    details[key] = details[key]?.[0] ? JSON.parse(details[key][0]) : ''
+                })
+            }
             response.send({
-                details: results.data.attributes
+                details
             })
         }
         catch (error) {
@@ -249,10 +254,20 @@ export class AppController {
         }
     }
 
-    @Post()
-    async(@Body() inputData: any, @Res() response: any) {
+    @Post('setUserAttributes')
+    @Public()
+    async setUserAttributes(@Body() inputData: any, @Res() response: any) {
         try {
-            const details = inputData.details;
+            let details = inputData.details;
+            Object.keys(details).map(key => {
+                details[key] = [JSON.stringify(details[key])]
+            })
+            const userId = inputData.userId;
+            const payload = {
+                "attributes": details
+            }
+            await this.userService.setUserAttributes(userId, payload);
+            response.status(200).send()
         }
         catch (error) {
             console.error('execute-userAttr-impl: ', error.message);
