@@ -65,6 +65,9 @@ export class UserService {
     async getAllowedReportsOfUser(token: string) {
         let userInfoRes: any = await this.getUserInfoByToken(token);
         let userRoles = userInfoRes?.data?.realm_access?.roles;
+        if (userRoles?.includes('admin')) {
+            userRoles.splice(userRoles.indexOf('guest'), 1)
+        }
         let userId = userInfoRes.data.sub
         let allowedReports = [];
         if (userRoles.length > 0) {
@@ -74,7 +77,7 @@ export class UserService {
                 if (roleInfo && roleInfo.attributes && roleInfo.attributes.reports && roleInfo.attributes.reports.length > 0) {
                     let temp = []
                     let reports = roleInfo.attributes.reports.filter((string) => {
-                        if(string.includes(',')) {
+                        if (string.includes(',')) {
                             temp = temp.concat(string.split(','))
                             return false
                         }
