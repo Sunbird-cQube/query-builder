@@ -340,7 +340,7 @@ export class AppController {
     }
 
     @Post('/captureTelemetry')
-    // @Public()
+    @Public()
     async captureTelemetry(@Body() inputData: any, @Res() response:any){
         try {
             let getJWT = await this.httpService.get(`${process.env.INGESTION_URL}/generatejwt`).toPromise()
