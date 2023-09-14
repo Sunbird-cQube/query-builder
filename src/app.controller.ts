@@ -226,7 +226,7 @@ export class AppController {
     }
 
     @Get('getUserAttributes/:userId')
-    @Public()
+    // @Public()
     async getUserAttributes(@Res() response: any, @Param('userId') userId: any): Promise<any> {
         try {
             const token: any = await this.userService.getAdminUserToken();
@@ -255,7 +255,7 @@ export class AppController {
     }
 
     @Post('setUserAttributes')
-    @Public()
+    // @Public()
     async setUserAttributes(@Body() inputData: any, @Res() response: any) {
         try {
             let details = inputData.details;
@@ -277,7 +277,7 @@ export class AppController {
     }
 
     @Get('addUserInfo')
-    @Public()
+    // @Public()
     async addUserInfo(@Res() response: any, @Req() request: any) {
         try {
             const clientScopesRes = await this.userService.getClientScopes();
