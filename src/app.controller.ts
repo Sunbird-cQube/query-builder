@@ -277,7 +277,7 @@ export class AppController {
     }
 
     @Get('addUserInfo')
-    // @Public()
+    @Public()
     async addUserInfo(@Res() response: any, @Req() request: any) {
         try {
             const clientScopesRes = await this.userService.getClientScopes();
