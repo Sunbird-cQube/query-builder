@@ -65,9 +65,9 @@ export class UserService {
     async getAllowedReportsOfUser(token: string) {
         let userInfoRes: any = await this.getUserInfoByToken(token);
         let userRoles = userInfoRes?.data?.realm_access?.roles;
-        if (userRoles?.includes('admin')) {
-            userRoles.splice(userRoles.indexOf('guest'), 1)
-        }
+        // if (userRoles?.includes('admin')) {
+        //     userRoles.splice(userRoles.indexOf('guest'), 1)
+        // }
         let userId = userInfoRes.data.sub
         let allowedReports = [];
         if (userRoles.length > 0) {
